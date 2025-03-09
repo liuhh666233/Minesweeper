@@ -17,15 +17,20 @@ const CellButton = styled.button<{ revealed: boolean }>`
   padding: 0;
   font-size: 14px;
   position: relative;
-  transition: all 0.1s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
   
-  // 3D 效果
+  // 3D 效果 - 减少阴影复杂度
   box-shadow: ${props => props.revealed
-        ? 'inset 0 1px 3px rgba(0, 0, 0, 0.2)'
-        : `
-      inset -2px -2px 3px rgba(0, 0, 0, 0.2),
-      inset 2px 2px 3px rgba(255, 255, 255, 0.2)
-    `};
+        ? 'inset 0 1px 2px rgba(0, 0, 0, 0.15)'
+        : 'inset -1px -1px 2px rgba(0, 0, 0, 0.15), inset 1px 1px 2px rgba(255, 255, 255, 0.15)'};
+  
+  // 使用 transform 硬件加速
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  
+  // 只对背景色应用过渡，移除所有动画
+  transition: background-color 0.05s ease;
   
   &:hover {
     background-color: ${props => props.revealed
@@ -34,22 +39,14 @@ const CellButton = styled.button<{ revealed: boolean }>`
   }
 
   &:active {
-    transform: ${props => props.revealed ? 'none' : 'scale(0.95)'};
+    box-shadow: ${props => props.revealed
+        ? 'inset 0 1px 2px rgba(0, 0, 0, 0.15)'
+        : 'inset 0 1px 2px rgba(0, 0, 0, 0.2)'};
   }
 
-  // 网格边框效果
-  &::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 1px;
-    height: 1px;
-    background-color: ${props => props.theme.colors.border};
-    box-shadow: 
-      -1px 0 0 ${props => props.theme.colors.border},
-      0 -1px 0 ${props => props.theme.colors.border};
-  }
+  // 简化网格边框效果
+  border-right: 1px solid ${props => props.theme.colors.border};
+  border-bottom: 1px solid ${props => props.theme.colors.border};
 `;
 
 const NUMBER_COLORS: { [key: number]: string } = {
@@ -69,7 +66,7 @@ interface CellProps {
     onRightClick: (e: React.MouseEvent) => void;
 }
 
-export const Cell: React.FC<CellProps> = ({ state, onLeftClick, onRightClick }) => {
+export const Cell: React.FC<CellProps> = React.memo(({ state, onLeftClick, onRightClick }) => {
     const getCellContent = () => {
         if (state.is_flagged) {
             return '🚩';
@@ -102,4 +99,4 @@ export const Cell: React.FC<CellProps> = ({ state, onLeftClick, onRightClick }) 
             {content}
         </CellButton>
     );
-}; 
+}); 
