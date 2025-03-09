@@ -18,30 +18,30 @@ const ButtonGroup = styled.div`
 
 const Button = styled.button<{ isSelected?: boolean }>`
   padding: 10px 20px;
-  border: 2px solid #4a90e2;
+  border: 2px solid ${props => props.theme.colors.primary};
   border-radius: 5px;
-  background-color: ${props => props.isSelected ? '#4a90e2' : 'white'};
-  color: ${props => props.isSelected ? 'white' : '#4a90e2'};
+  background-color: ${props => props.isSelected ? props.theme.colors.primary : props.theme.colors.button.background};
+  color: ${props => props.isSelected ? props.theme.colors.button.background : props.theme.colors.primary};
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: #4a90e2;
-    color: white;
+    background-color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme.colors.button.background};
   }
 `;
 
 const DifficultyInfo = styled.div`
   padding: 10px 20px;
-  background-color: #f5f5f5;
+  background-color: ${props => props.theme.colors.info.background};
   border-radius: 5px;
   font-size: 14px;
-  color: #666;
+  color: ${props => props.theme.colors.info.text};
   text-align: center;
   
   strong {
-    color: #4a90e2;
+    color: ${props => props.theme.colors.info.highlight};
   }
 `;
 
