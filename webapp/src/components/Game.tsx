@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { Board } from './Board';
+import { UserNamePrompt } from './UserNamePrompt';
 import { DifficultySelector } from './DifficultySelector';
 import { Timer } from './Timer';
 import { DifficultyLevel, GameState } from '../types';
@@ -25,6 +26,7 @@ const GameInfo = styled.div`
     gap: 30px;
     align-items: center;
     font-size: 1.2em;
+    color: ${props => props.theme.colors.text.primary};
 `;
 
 const Button = styled.button`
@@ -41,11 +43,26 @@ const Button = styled.button`
     }
 `;
 
-const UserNameInput = styled.input`
-    padding: 8px 12px;
-    border: 1px solid ${props => props.theme.colors.border};
-    border-radius: 4px;
-    font-size: 1em;
+const UserName = styled.div`
+    color: ${props => props.theme.colors.text.primary};
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    button {
+        font-size: 0.9em;
+        padding: 4px 8px;
+        color: ${props => props.theme.colors.text.secondary};
+        background: none;
+        border: 1px solid ${props => props.theme.colors.border};
+        border-radius: 4px;
+        cursor: pointer;
+
+        &:hover {
+            background: ${props => props.theme.colors.background.secondary};
+        }
+    }
 `;
 
 interface GameProps {
@@ -59,13 +76,18 @@ export const Game: React.FC<GameProps> = ({
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [difficulty, setDifficulty] = useState<DifficultyLevel>(initialDifficulty);
     const [userName, setUserName] = useState<string>('');
+    const [showPrompt, setShowPrompt] = useState(true);
     const [time, setTime] = useState(0);
     const [moves, setMoves] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-    const startNewGame = useCallback(async (diff: DifficultyLevel) => {
+    const startNewGame = useCallback(async () => {
+        if (!userName) {
+            setShowPrompt(true);
+            return;
+        }
         try {
-            const response = await createNewGame(diff);
+            const response = await createNewGame(difficulty);
             setGameId(response.game_id);
             setGameState(response.state);
             setTime(0);
@@ -74,15 +96,23 @@ export const Game: React.FC<GameProps> = ({
         } catch (error) {
             console.error('Failed to start new game:', error);
         }
-    }, []);
+    }, [difficulty, userName]);
 
     useEffect(() => {
-        startNewGame(difficulty);
-    }, [difficulty, startNewGame]);
+        if (userName) {
+            startNewGame();
+        }
+    }, [userName, startNewGame]);
+
+    useEffect(() => {
+        if (userName) {
+            startNewGame();
+        }
+    }, [difficulty]);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
-        if (isTimerRunning && !gameState?.is_game_over) {
+        if (isTimerRunning && gameState && !gameState.is_game_over) {
             timer = setInterval(() => {
                 setTime(t => t + 1);
             }, 1000);
@@ -91,26 +121,39 @@ export const Game: React.FC<GameProps> = ({
     }, [isTimerRunning, gameState?.is_game_over]);
 
     const handleCellClick = async (x: number, y: number, action: 'reveal' | 'flag') => {
-        if (!gameId || gameState?.is_game_over) return;
+        if (!gameId || !gameState || gameState.is_game_over) return;
 
         try {
-            const newState = await makeMove(gameId, { x, y, action });
-            setGameState(newState);
-            setMoves(m => m + 1);
-
-            // 如果游戏结束，保存结果
-            if (newState.is_game_over && userName) {
-                await completeGame(gameId, {
-                    user_name: userName,
-                    duration: time,
-                    moves: moves + 1
-                });
+            const response = await makeMove(gameId, { x, y, action });
+            setGameState(response);
+            if (action === 'reveal') {
+                setMoves(m => m + 1);
+            }
+            if (response.is_game_over) {
                 setIsTimerRunning(false);
             }
         } catch (error) {
             console.error('Failed to make move:', error);
         }
     };
+
+    const handleUserNameSubmit = (name: string) => {
+        setUserName(name);
+        setShowPrompt(false);
+        localStorage.setItem('minesweeper_username', name);
+    };
+
+    const handleChangeUserName = () => {
+        setShowPrompt(true);
+    };
+
+    useEffect(() => {
+        const savedUserName = localStorage.getItem('minesweeper_username');
+        if (savedUserName) {
+            setUserName(savedUserName);
+            setShowPrompt(false);
+        }
+    }, []);
 
     const handleRestart = async () => {
         if (!gameId) return;
@@ -126,42 +169,45 @@ export const Game: React.FC<GameProps> = ({
         }
     };
 
-    if (!gameState) {
-        return <div>加载中...</div>;
+    if (showPrompt) {
+        return <UserNamePrompt onSubmit={handleUserNameSubmit} />;
     }
 
     return (
         <GameContainer>
             <Controls>
+                <UserName>
+                    {userName}
+                    <button onClick={handleChangeUserName}>更改</button>
+                </UserName>
                 <DifficultySelector
                     currentDifficulty={difficulty}
                     onSelect={setDifficulty}
-                />
-                <UserNameInput
-                    placeholder="输入你的名字"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
                 />
                 <Button onClick={handleRestart}>
                     重新开始
                 </Button>
             </Controls>
 
-            <GameInfo>
-                <div>剩余地雷: {gameState.mines_remaining}</div>
-                <Timer time={time} />
-                <div>移动次数: {moves}</div>
-            </GameInfo>
+            {gameState && (
+                <>
+                    <GameInfo>
+                        <div>剩余地雷: {gameState.mines_remaining}</div>
+                        <Timer time={time} />
+                        <div>移动次数: {moves}</div>
+                    </GameInfo>
 
-            <Board
-                state={gameState}
-                onCellClick={handleCellClick}
-            />
+                    <Board
+                        state={gameState}
+                        onCellClick={handleCellClick}
+                    />
 
-            {gameState.is_game_over && (
-                <div>
-                    {gameState.is_won ? '恭喜获胜！' : '游戏结束！'}
-                </div>
+                    {gameState.is_game_over && (
+                        <div style={{ color: gameState.is_won ? '#4caf50' : '#f44336', fontSize: '1.2em' }}>
+                            {gameState.is_won ? '恭喜获胜！' : '游戏结束！'}
+                        </div>
+                    )}
+                </>
             )}
         </GameContainer>
     );
