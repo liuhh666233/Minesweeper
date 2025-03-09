@@ -1,6 +1,7 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from enum import Enum
+from datetime import datetime
 
 class DifficultyLevel(str, Enum):
     """游戏难度级别枚举
@@ -47,25 +48,25 @@ class GameState(BaseModel):
     
     Attributes:
         board: 二维数组表示的游戏板
-        game_over: 游戏是否结束
-        won: 是否获胜
         mines_remaining: 剩余地雷数量
+        is_game_over: 游戏是否结束
+        is_won: 是否获胜
     """
     board: List[List[CellState]]
-    game_over: bool = False
-    won: bool = False
     mines_remaining: int
+    is_game_over: bool = False
+    is_won: bool = False
 
 class GameMove(BaseModel):
     """游戏移动操作模型
     
     Attributes:
-        row: 操作的行索引
-        col: 操作的列索引
+        x: 操作的行索引
+        y: 操作的列索引
         action: 操作类型 ("reveal" 揭示或 "flag" 标记)
     """
-    row: int
-    col: int
+    x: int
+    y: int
     action: str  # "reveal" or "flag"
 
 class NewGameResponse(BaseModel):
@@ -77,6 +78,22 @@ class NewGameResponse(BaseModel):
     """
     game_id: int
     state: GameState
+
+# 新增的模型
+class LeaderboardEntry(BaseModel):
+    rank: int
+    user_name: str
+    best_time: int
+    played_at: str
+
+class UserStats(BaseModel):
+    user_name: str
+    stats: Dict[str, Dict[str, Optional[int]]]
+
+class GameResult(BaseModel):
+    user_name: str
+    duration: int
+    moves: int
 
 # 不同难度级别的游戏配置
 DIFFICULTY_SETTINGS = {

@@ -2,16 +2,21 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models import (
     GameConfig, GameState, GameMove, DifficultyLevel, 
-    DIFFICULTY_SETTINGS, NewGameResponse
+    DIFFICULTY_SETTINGS, NewGameResponse, LeaderboardEntry,
+    UserStats, GameResult
 )
 from game_logic import MinesweeperGame
-from typing import Dict, Union
+from typing import Dict, Union, List
+from db import GameDB, init_db
 
 app = FastAPI(
     title="Minesweeper API",
     description="扫雷游戏后端API服务",
     version="1.0.0"
 )
+
+# 初始化数据库
+init_db()
 
 # Configure CORS
 app.add_middleware(
@@ -22,7 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Store active games in memory (in production, you'd want to use a proper database)
+# Store active games in memory
 games = {}
 
 @app.get("/")
@@ -86,6 +91,39 @@ async def make_move(game_id: int, move: GameMove) -> GameState:
     new_state = game.make_move(move)
     return new_state
 
+@app.post("/game/{game_id}/complete")
+async def complete_game(game_id: int, result: GameResult) -> Dict:
+    """完成游戏，保存结果
+    
+    Args:
+        game_id: 游戏ID
+        result: 游戏结果
+        
+    Returns:
+        Dict: 保存结果
+        
+    Raises:
+        HTTPException: 当游戏ID不存在时抛出404错误
+    """
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[game_id]
+    
+    # 保存游戏结果
+    game_record_id = GameDB.save_game_result(
+        user_name=result.user_name,
+        difficulty=game.config.difficulty,
+        duration=result.duration,
+        result=game.state.is_won,
+        moves=result.moves,
+        board_width=game.config.width,
+        board_height=game.config.height,
+        mines_count=game.config.mines
+    )
+    
+    return {"message": "Game result saved", "record_id": game_record_id}
+
 @app.post("/game/{game_id}/restart")
 async def restart_game(game_id: int) -> NewGameResponse:
     """重新开始游戏
@@ -125,6 +163,30 @@ async def get_game_state(game_id: int) -> GameState:
         raise HTTPException(status_code=404, detail="Game not found")
     
     return games[game_id].state
+
+@app.get("/leaderboard/{difficulty}")
+async def get_leaderboard(difficulty: DifficultyLevel) -> List[LeaderboardEntry]:
+    """获取排行榜
+    
+    Args:
+        difficulty: 游戏难度
+        
+    Returns:
+        List[LeaderboardEntry]: 排行榜条目列表
+    """
+    return GameDB.get_leaderboard(difficulty)
+
+@app.get("/stats/{user_name}")
+async def get_user_stats(user_name: str) -> UserStats:
+    """获取用户统计信息
+    
+    Args:
+        user_name: 用户名
+        
+    Returns:
+        UserStats: 用户统计信息
+    """
+    return GameDB.get_user_stats(user_name)
 
 if __name__ == "__main__":
     import uvicorn
