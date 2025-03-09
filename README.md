@@ -10,6 +10,10 @@
 - 自动展开空白区域
 - 游戏胜负判定
 
+![棋盘界面](./images/board.png)
+
+![排行榜界面](./images/RankingList.png)
+
 ## 技术栈
 
 ### 后端
