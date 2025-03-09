@@ -53,7 +53,7 @@ python main.py
 2. 启动前端开发服务器：
 ```bash
 cd webapp
-yarn start
+yarn dev
 ```
 前端应用将在 http://localhost:3000 运行
 
@@ -89,4 +89,74 @@ yarn start
     ├── package.json       # 项目配置
     └── tsconfig.json      # TypeScript 配置
 ```
+
+## 前端配置文件说明
+
+### package.json
+项目的核心配置文件，包含以下重要信息：
+- 项目基本信息：名称为"minesweeper-frontend"，版本为0.1.0
+- 依赖项管理：
+  - 核心依赖：React、React DOM、TypeScript、Axios等
+  - 开发依赖：Vite等构建工具
+- 脚本命令：
+  - `yarn dev`: 使用 Vite 启动开发服务器
+  - `yarn build`: 使用 TypeScript 编译并用 Vite 构建生产版本
+  - `yarn preview`: 预览构建后的生产版本
+  - `yarn start`: 使用 react-scripts 启动应用
+
+### tsconfig.json
+TypeScript 的主配置文件，定义了编译器行为：
+- 编译目标：使用最新的 ECMAScript 特性（ESNext）
+- JSX 支持：配置为 React JSX
+- 严格的类型检查：启用严格模式和各种类型检查选项
+- 模块解析：使用 Node.js 风格的模块解析
+- 源码位置：指定源代码在 `src` 目录下
+- 其他特性：
+  - 允许导入 JSON 文件
+  - 启用严格的类型检查
+  - 禁止未使用的变量和参数
+
+### vite.config.ts
+Vite 构建工具的配置文件：
+- 配置 React 插件支持
+- 指定项目根目录
+- 构建输出配置：
+  - 输出目录：`dist`
+  - 资源目录：`assets`
+  - 构建前清空输出目录
+- 路径别名配置：将 `@` 映射到 `src` 目录
+- 资源文件的命名规则和目录结构
+
+### tsconfig.node.json
+专门为 Vite 配置文件准备的 TypeScript 配置：
+- 启用项目引用功能
+- 配置模块解析为 ESNext 和 bundler
+- 允许默认导入的语法
+- 仅包含 vite.config.ts 文件
+
+## 构建工具说明
+
+本项目使用 Vite 作为构建工具，它具有以下优势：
+
+1. **开发服务器**
+- 极快的服务器启动速度
+- 基于原生 ES 模块的开发服务
+- 按需编译，提高开发效率
+
+2. **构建优化**
+- 使用 Rollup 进行生产环境构建
+- 自动代码分割
+- Tree-shaking（移除未使用的代码）
+- 自动处理 CSS、图片等资源
+
+3. **开发体验**
+- 快速的热模块替换（HMR）
+- TypeScript 和 JSX 的开箱即用支持
+- CSS 预处理器支持
+- 静态资源处理
+
+4. **使用方式**
+- 开发模式：`yarn dev`
+- 构建生产版本：`yarn build`
+- 预览生产版本：`yarn preview`
 
