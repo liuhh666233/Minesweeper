@@ -1,55 +1,88 @@
-import React, { useState, useEffect } from 'react';
-import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
+import React, { useState } from 'react';
+import styled, { ThemeProvider } from 'styled-components';
 import { Game } from './components/Game';
+import { Leaderboard } from './components/Leaderboard';
+import { GlobalStyle, theme as lightTheme } from './styles/theme';
 import { ThemeToggle } from './components/ThemeToggle';
-import { lightTheme, darkTheme } from './styles/theme';
 
-const GlobalStyle = createGlobalStyle`
-  body {
-    margin: 0;
-    padding: 0;
-    background-color: ${props => props.theme.colors.background};
-    color: ${props => props.theme.colors.text};
-    transition: all 0.3s ease;
+const darkTheme = {
+  ...lightTheme,
+  name: 'dark' as const,
+  colors: {
+    ...lightTheme.colors,
+    primary: '#2196F3',
+    primaryDark: '#1976D2',
+    background: {
+      primary: '#1e1e1e',
+      secondary: '#2d2d2d'
+    },
+    text: {
+      primary: '#ffffff',
+      secondary: '#b0b0b0'
+    },
+    border: '#404040',
+    cell: {
+      revealed: '#383838',
+      unrevealed: '#2d2d2d',
+      hover: '#353535'
+    },
+    info: {
+      background: '#2d2d2d'
+    }
   }
-`;
+};
 
 const AppContainer = styled.div`
-  text-align: center;
-  padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
 `;
 
 const Title = styled.h1`
-  color: ${props => props.theme.colors.text};
-  margin-bottom: 30px;
+    text-align: center;
+    color: ${props => props.theme.colors.text.primary};
+    margin-bottom: 30px;
 `;
 
-function App() {
-  const [theme, setTheme] = useState(() => {
-    // 从本地存储读取主题设置，默认为浅色主题
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme === 'dark' ? darkTheme : lightTheme;
-  });
+const GameLayout = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
 
-  // 当主题改变时保存到本地存储
-  useEffect(() => {
-    localStorage.setItem('theme', theme.name);
-  }, [theme]);
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const GameContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+`;
+
+const App: React.FC = () => {
+  const [currentTheme, setCurrentTheme] = useState(lightTheme);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme.name === 'light' ? darkTheme : lightTheme);
+    setCurrentTheme(current => current.name === 'light' ? darkTheme : lightTheme);
   };
 
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={currentTheme}>
       <GlobalStyle />
+      <ThemeToggle currentTheme={currentTheme} onToggle={toggleTheme} />
       <AppContainer>
         <Title>扫雷游戏</Title>
-        <Game />
-        <ThemeToggle currentTheme={theme} onToggle={toggleTheme} />
+        <GameLayout>
+          <GameContainer>
+            <Game />
+          </GameContainer>
+          <Leaderboard />
+        </GameLayout>
       </AppContainer>
     </ThemeProvider>
   );
-}
+};
 
 export default App; 

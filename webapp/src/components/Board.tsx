@@ -1,46 +1,43 @@
 import React from 'react';
 import styled from 'styled-components';
+import { GameState } from '../types';
 import { Cell } from './Cell';
-import { CellState, GameMove } from '../types';
 
 const BoardContainer = styled.div`
-  display: inline-block;
-  padding: 10px;
-  background-color: #f0f0f0;
-  border: 2px solid #999;
-  border-radius: 5px;
+    display: inline-grid;
+    gap: 1px;
+    padding: 10px;
+    background: ${props => props.theme.colors.background.secondary};
+    border-radius: 4px;
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, ${props => props.theme.name === 'dark' ? '0.4' : '0.2'});
 `;
 
-const Row = styled.div`
-  display: flex;
-`;
-
-interface BoardProps {
-    board: CellState[][];
-    onMove: (move: GameMove) => void;
-    disabled?: boolean;
+export interface BoardProps {
+    state: GameState;
+    onCellClick: (x: number, y: number, action: 'reveal' | 'flag') => void;
 }
 
-export const Board: React.FC<BoardProps> = ({ board, onMove, disabled = false }) => {
-    const handleCellClick = (row: number, col: number, action: 'reveal' | 'flag') => {
-        if (disabled) return;
-        onMove({ row, col, action });
-    };
-
+export const Board: React.FC<BoardProps> = ({ state, onCellClick }) => {
     return (
-        <BoardContainer>
-            {board.map((row, rowIndex) => (
-                <Row key={rowIndex}>
-                    {row.map((cell, colIndex) => (
-                        <Cell
-                            key={`${rowIndex}-${colIndex}`}
-                            state={cell}
-                            onLeftClick={() => handleCellClick(rowIndex, colIndex, 'reveal')}
-                            onRightClick={() => handleCellClick(rowIndex, colIndex, 'flag')}
-                        />
-                    ))}
-                </Row>
-            ))}
+        <BoardContainer
+            style={{
+                gridTemplateColumns: `repeat(${state.board[0].length}, 30px)`,
+            }}
+            onContextMenu={(e) => e.preventDefault()}
+        >
+            {state.board.map((row, x) =>
+                row.map((cell, y) => (
+                    <Cell
+                        key={`${x}-${y}`}
+                        state={cell}
+                        onLeftClick={() => onCellClick(x, y, 'reveal')}
+                        onRightClick={(e: React.MouseEvent) => {
+                            e.preventDefault();
+                            onCellClick(x, y, 'flag');
+                        }}
+                    />
+                ))
+            )}
         </BoardContainer>
     );
 }; 

@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { CellState } from '../types';
 
 const CellButton = styled.button<{ revealed: boolean }>`
@@ -20,16 +20,21 @@ const CellButton = styled.button<{ revealed: boolean }>`
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   
-  // 3D 效果 - 减少阴影复杂度
-  box-shadow: ${props => props.revealed
-        ? 'inset 0 1px 2px rgba(0, 0, 0, 0.15)'
-        : 'inset -1px -1px 2px rgba(0, 0, 0, 0.15), inset 1px 1px 2px rgba(255, 255, 255, 0.15)'};
+  // 3D 效果 - 根据主题调整阴影
+  box-shadow: ${props => {
+        const isDark = props.theme.name === 'dark';
+        const shadowOpacity = isDark ? '0.3' : '0.15';
+        const lightOpacity = isDark ? '0.1' : '0.15';
+        return props.revealed
+            ? `inset 0 1px 2px rgba(0, 0, 0, ${shadowOpacity})`
+            : `inset -1px -1px 2px rgba(0, 0, 0, ${shadowOpacity}), inset 1px 1px 2px rgba(255, 255, 255, ${lightOpacity})`;
+    }};
   
   // 使用 transform 硬件加速
   transform: translateZ(0);
   backface-visibility: hidden;
   
-  // 只对背景色应用过渡，移除所有动画
+  // 只对背景色应用过渡
   transition: background-color 0.05s ease;
   
   &:hover {
@@ -39,26 +44,34 @@ const CellButton = styled.button<{ revealed: boolean }>`
   }
 
   &:active {
-    box-shadow: ${props => props.revealed
-        ? 'inset 0 1px 2px rgba(0, 0, 0, 0.15)'
-        : 'inset 0 1px 2px rgba(0, 0, 0, 0.2)'};
+    box-shadow: ${props => {
+        const isDark = props.theme.name === 'dark';
+        const shadowOpacity = isDark ? '0.3' : '0.2';
+        return props.revealed
+            ? `inset 0 1px 2px rgba(0, 0, 0, ${shadowOpacity})`
+            : `inset 0 1px 2px rgba(0, 0, 0, ${shadowOpacity})`;
+    }};
   }
 
-  // 简化网格边框效果
+  // 网格边框效果
   border-right: 1px solid ${props => props.theme.colors.border};
   border-bottom: 1px solid ${props => props.theme.colors.border};
 `;
 
-const NUMBER_COLORS: { [key: number]: string } = {
-    1: '#2196F3', // 蓝色
-    2: '#4CAF50', // 绿色
-    3: '#F44336', // 红色
-    4: '#3F51B5', // 深蓝色
-    5: '#8B0000', // 深红色
-    6: '#008B8B', // 青色
-    7: '#000000', // 黑色
-    8: '#808080'  // 灰色
+type NumberColors = {
+    [K in 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8]: string;
 };
+
+const getNumberColors = (isDark: boolean): NumberColors => ({
+    1: isDark ? '#64B5F6' : '#2196F3', // 蓝色
+    2: isDark ? '#81C784' : '#4CAF50', // 绿色
+    3: isDark ? '#E57373' : '#F44336', // 红色
+    4: isDark ? '#7986CB' : '#3F51B5', // 深蓝色
+    5: isDark ? '#FF8A80' : '#8B0000', // 深红色
+    6: isDark ? '#4DD0E1' : '#008B8B', // 青色
+    7: isDark ? '#E0E0E0' : '#000000', // 黑/白
+    8: isDark ? '#B0B0B0' : '#808080'  // 灰色
+});
 
 interface CellProps {
     state: CellState;
@@ -66,7 +79,9 @@ interface CellProps {
     onRightClick: (e: React.MouseEvent) => void;
 }
 
-export const Cell: React.FC<CellProps> = React.memo(({ state, onLeftClick, onRightClick }) => {
+const Cell = React.memo<CellProps>(({ state, onLeftClick, onRightClick }) => {
+    const theme = useTheme();
+
     const getCellContent = () => {
         if (state.is_flagged) {
             return '🚩';
@@ -84,19 +99,24 @@ export const Cell: React.FC<CellProps> = React.memo(({ state, onLeftClick, onRig
     };
 
     const content = getCellContent();
-    const color = typeof content === 'number' ? NUMBER_COLORS[content] : 'inherit';
+    const isDark = theme.name === 'dark';
+    const numberColors = getNumberColors(isDark);
+    const color = typeof content === 'number' && content >= 1 && content <= 8
+        ? numberColors[content as keyof NumberColors]
+        : 'inherit';
 
     return (
         <CellButton
             revealed={state.is_revealed}
             onClick={onLeftClick}
-            onContextMenu={(e) => {
-                e.preventDefault();
-                onRightClick(e);
-            }}
+            onContextMenu={onRightClick}
             style={{ color }}
         >
             {content}
         </CellButton>
     );
-}); 
+});
+
+Cell.displayName = 'Cell';
+
+export { Cell }; 
