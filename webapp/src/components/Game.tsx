@@ -90,27 +90,27 @@ export const Game: React.FC<GameProps> = ({
         }
         try {
             const response = await createNewGame(difficulty);
-            setGameId(response.game_id);
-            setGameState(response.state);
-            setTime(0);
-            setMoves(0);
-            setIsTimerRunning(true);
+            if (response && response.game_id && response.state) {
+                setGameId(response.game_id);
+                setGameState(response.state);
+                setTime(0);
+                setMoves(0);
+                setIsTimerRunning(true);
+            } else {
+                console.error('Invalid game response:', response);
+            }
         } catch (error) {
             console.error('Failed to start new game:', error);
         }
     }, [difficulty, userName]);
 
     useEffect(() => {
-        if (userName) {
-            startNewGame();
+        const savedUserName = localStorage.getItem('minesweeper_username');
+        if (savedUserName) {
+            setUserName(savedUserName);
+            setShowPrompt(false);
         }
-    }, [userName, startNewGame]);
-
-    useEffect(() => {
-        if (userName) {
-            startNewGame();
-        }
-    }, [difficulty]);
+    }, []);
 
     useEffect(() => {
         let timer: NodeJS.Timeout;
@@ -123,27 +123,47 @@ export const Game: React.FC<GameProps> = ({
     }, [isTimerRunning, gameState?.is_game_over]);
 
     const handleCellClick = async (x: number, y: number, action: 'reveal' | 'flag') => {
-        if (!gameId || !gameState || gameState.is_game_over) return;
-
-        try {
-            const response = await makeMove(gameId, { x, y, action });
-            setGameState(response);
-            if (action === 'reveal') {
-                setMoves(m => m + 1);
-            }
-            if (response.is_game_over) {
-                setIsTimerRunning(false);
-                if (response.is_won) {
-                    await completeGame(gameId, {
-                        user_name: userName,
-                        duration: time,
-                        moves: moves + 1
-                    });
-                    onGameComplete?.();
+        if (!gameState || gameState.is_game_over) return;
+        if (gameId) {
+            try {
+                const response = await makeMove(gameId, { x, y, action });
+                setGameState(response);
+                if (action === 'reveal') {
+                    setMoves(m => m + 1);
                 }
+                if (response.is_game_over) {
+                    setIsTimerRunning(false);
+                    if (response.is_won) {
+                        await completeGame(gameId, {
+                            user_name: userName,
+                            duration: time,
+                            moves: moves + 1
+                        });
+                        onGameComplete?.();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to make move:', error);
             }
-        } catch (error) {
-            console.error('Failed to make move:', error);
+        }
+    };
+
+    const handleStartOrRestart = async () => {
+        if (gameId) {
+            try {
+                const response = await restartGame(gameId);
+                if (response && response.state) {
+                    setGameState(response.state);
+                    setTime(0);
+                    setMoves(0);
+                    setIsTimerRunning(true);
+                }
+            } catch (error) {
+                console.error('Failed to restart game:', error);
+            }
+        } else {
+            console.log('Starting new game...');
+            await startNewGame();
         }
     };
 
@@ -157,25 +177,35 @@ export const Game: React.FC<GameProps> = ({
         setShowPrompt(true);
     };
 
-    useEffect(() => {
-        const savedUserName = localStorage.getItem('minesweeper_username');
-        if (savedUserName) {
-            setUserName(savedUserName);
-            setShowPrompt(false);
-        }
-    }, []);
+    const getEmptyBoard = useCallback(() => {
+        const width = difficulty === 'beginner' ? 9 : (difficulty === 'intermediate' ? 16 : 30);
+        const height = difficulty === 'beginner' ? 9 : (difficulty === 'intermediate' ? 16 : 16);
+        return Array(height).fill(null).map(() =>
+            Array(width).fill(null).map(() => ({
+                is_revealed: false,
+                is_mine: false,
+                is_flagged: false,
+                adjacent_mines: 0
+            }))
+        );
+    }, [difficulty]);
 
-    const handleRestart = async () => {
-        if (!gameId) return;
-
+    const handleDifficultyChange = async (newDifficulty: DifficultyLevel) => {
+        setDifficulty(newDifficulty);
+        // 直接开始新游戏
         try {
-            const response = await restartGame(gameId);
-            setGameState(response.state);
-            setTime(0);
-            setMoves(0);
-            setIsTimerRunning(true);
+            const response = await createNewGame(newDifficulty);
+            if (response && response.game_id && response.state) {
+                setGameId(response.game_id);
+                setGameState(response.state);
+                setTime(0);
+                setMoves(0);
+                setIsTimerRunning(true);
+            } else {
+                console.error('Invalid game response:', response);
+            }
         } catch (error) {
-            console.error('Failed to restart game:', error);
+            console.error('Failed to start new game:', error);
         }
     };
 
@@ -192,32 +222,33 @@ export const Game: React.FC<GameProps> = ({
                 </UserName>
                 <DifficultySelector
                     currentDifficulty={difficulty}
-                    onSelect={setDifficulty}
+                    onSelect={handleDifficultyChange}
                 />
-                <Button onClick={handleRestart}>
-                    重新开始
+                <Button onClick={handleStartOrRestart}>
+                    {gameId ? '重新开始' : '开始游戏'}
                 </Button>
             </Controls>
 
-            {gameState && (
-                <>
-                    <GameInfo>
-                        <div>剩余地雷: {gameState.mines_remaining}</div>
-                        <Timer time={time} />
-                        <div>移动次数: {moves}</div>
-                    </GameInfo>
+            <GameInfo>
+                <div>剩余地雷: {gameState?.mines_remaining ?? 0}</div>
+                <Timer time={time} />
+                <div>移动次数: {moves}</div>
+            </GameInfo>
 
-                    <Board
-                        state={gameState}
-                        onCellClick={handleCellClick}
-                    />
+            <Board
+                state={gameState ?? {
+                    board: getEmptyBoard(),
+                    mines_remaining: 0,
+                    is_game_over: false,
+                    is_won: false
+                }}
+                onCellClick={gameId ? handleCellClick : () => { }}
+            />
 
-                    {gameState.is_game_over && (
-                        <div style={{ color: gameState.is_won ? '#4caf50' : '#f44336', fontSize: '1.2em' }}>
-                            {gameState.is_won ? '恭喜获胜！' : '游戏结束！'}
-                        </div>
-                    )}
-                </>
+            {gameState?.is_game_over && (
+                <div style={{ color: gameState.is_won ? '#4caf50' : '#f44336', fontSize: '1.2em' }}>
+                    {gameState.is_won ? '恭喜获胜！' : '游戏结束！'}
+                </div>
             )}
         </GameContainer>
     );

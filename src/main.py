@@ -1,5 +1,9 @@
+import os
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from models import (
     GameConfig, GameState, GameMove, DifficultyLevel, 
     DIFFICULTY_SETTINGS, NewGameResponse, LeaderboardEntry,
@@ -21,7 +25,11 @@ init_db()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React default port
+    allow_origins=[
+        "http://localhost:3000",  # React default port
+        "http://localhost:5173",  # Vite dev server
+        "http://127.0.0.1:5173"   # Vite dev server alternative
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,6 +37,26 @@ app.add_middleware(
 
 # Store active games in memory
 games = {}
+
+# ┌─────────────────────────┐
+# │ Serving the frontend UI │
+# └─────────────────────────┘
+
+DEV_FRONTEND_PATH = Path(
+    os.getenv("COCKPIT_FRONTEND", str(Path(__file__).parent.parent / "webapp" / "dist"))
+)
+app.mount("/assets", StaticFiles(directory=DEV_FRONTEND_PATH / "assets", html=True))
+
+
+@app.get("/")
+async def serve_ui():
+    return FileResponse(DEV_FRONTEND_PATH / "index.html")
+
+
+@app.get("/favicon.svg")
+async def serve_icon():
+    return FileResponse(DEV_FRONTEND_PATH / "favicon.svg")
+
 
 @app.get("/")
 async def root():
