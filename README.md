@@ -1,63 +1,92 @@
-# Simple Guide to start python development
+# Minesweeper Game
 
-1. 创建一个文件夹用于存放代码文件，例如 `cloude-trace`，并进入相应文件夹
+一个基于 React + FastAPI 的扫雷游戏实现。
 
-```bash
-cd ~
-mkdir work/cloude-trace -p
-cd work/cloude-trace
-```
+## 功能特点
 
-2. 使用 `nix flake template` 初始化项目
+- 三种难度级别（初级、中级、高级）
+- 实时游戏状态显示（剩余地雷数、计时器）
+- 左键点击揭示格子，右键点击标记地雷
+- 自动展开空白区域
+- 游戏胜负判定
 
-```bash
-nix flake init -t "git+ssh://git@github.com/quant-wonderland/wonder-pkgs#python-dev-starter" --refresh  
-nix flake lock --override-input nixpkgs "github:NixOS/nixpkgs?rev=841889913dfd06a70ffb39f603e29e46f45f0c1a"
-```
+## 技术栈
 
-3. 查看初始化后的文件结构，查看 `README.md` 文件，按照 `README.md` 文件的指引进行开发
+### 后端
+- Python 3.8+
+- FastAPI
+- Pydantic
+- Uvicorn
 
+### 前端
+- React 18
+- TypeScript
+- Styled Components
+- Axios
 
-# Python development Starter Kit User Guide 如何使用本 template 快速创建一个python repo
+## 开发环境设置
 
-## 1. 目录结构
-
-以下仅展示现在有目录结构, 这只是一个基础的模板目的仅为了方便快速构建一个python repo。
-
-```bash
-├── flake.lock # 依赖包的版本锁定文件，无需更改
-├── flake.nix # 依赖包的版本以及依赖关系文件，如无必要无需更改
-├── nix
-│   └── pkgs
-│       ├── dev-shell
-│              └── default.nix # 依赖包的版本以及依赖关系文件，如无必要无需更改
-│     
-├── README.md
-├── your_project_folder
-│   ├── __init__.py # init 文件，增加新的函数时需要增加 import
-│   ├── other_template_file1.py # 示例python文件
-│   ├── other_template_file2.py # 示例python文件
-│   ├── other_template_file3.py # 示例python文件
-│   ├── other_template_file4.py # 示例python文件
-│   ├── other_template_file5.py # 示例python文件
-│   └── main.py # 示例python文件, 此文件一般为项目启动文件
-└── setup.py # 打包为 pkgs 的话需要, 需要根据你自己的命令行启动方式构建打包文件
-```
-
-
-
-
-## 2. 运行
-
-首先执行如下命令进入开发环境：
-
+1. 进入开发环境：
 ```bash
 nix develop
 ```
 
-使用命令行方式运行你的项目：
-
+2. 安装依赖：
 ```bash
-python -m path.to.main:main
+# 安装后端依赖
+# nix develop 已安装依赖
+
+# 安装前端依赖
+cd webapp
+yarn install
+```
+
+## 运行项目
+
+1. 启动后端服务：
+```bash
+cd src
+python main.py
+```
+后端服务将在 http://localhost:8000 运行
+
+2. 启动前端开发服务器：
+```bash
+cd webapp
+yarn start
+```
+前端应用将在 http://localhost:3000 运行
+
+## API 文档
+
+启动后端服务后，可以通过以下地址访问 API 文档：
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+## 游戏规则
+
+1. 左键点击格子来揭示内容
+2. 右键点击格子来标记/取消标记地雷
+3. 数字表示周围八个格子中的地雷数量
+4. 揭示所有非地雷格子即为胜利
+5. 点击到地雷则游戏结束
+
+## 项目结构
+
+```
+├── src/                    # 后端代码
+│   ├── main.py            # FastAPI 应用入口
+│   ├── models.py          # 数据模型定义
+│   ├── game_logic.py      # 游戏核心逻辑
+│   └── requirements.txt   # Python 依赖
+│
+└── webapp/                 # 前端代码
+    ├── src/
+    │   ├── components/    # React 组件
+    │   ├── services/      # API 服务
+    │   ├── types.ts       # TypeScript 类型定义
+    │   └── App.tsx        # 主应用组件
+    ├── package.json       # 项目配置
+    └── tsconfig.json      # TypeScript 配置
 ```
 
