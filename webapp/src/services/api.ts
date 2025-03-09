@@ -1,31 +1,54 @@
 import axios from 'axios';
-import { DifficultyLevel, GameState, GameMove, NewGameResponse, GameConfigurations } from '../types';
+import {
+    GameState, GameMove, DifficultyLevel, NewGameResponse,
+    LeaderboardEntry, UserStats, GameResult
+} from '../types';
 
 const API_BASE_URL = 'http://localhost:8000';
 
-export const api = {
-    async getGameConfig(): Promise<GameConfigurations> {
-        const response = await axios.get<GameConfigurations>(`${API_BASE_URL}/game/config`);
-        return response.data;
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
     },
+});
 
-    async newGame(difficulty: DifficultyLevel): Promise<NewGameResponse> {
-        const response = await axios.post<NewGameResponse>(`${API_BASE_URL}/game/new/${difficulty}`);
-        return response.data;
-    },
+export const getGameConfig = async () => {
+    const response = await api.get('/game/config');
+    return response.data;
+};
 
-    async makeMove(gameId: number, move: GameMove): Promise<GameState> {
-        const response = await axios.post<GameState>(`${API_BASE_URL}/game/${gameId}/move`, move);
-        return response.data;
-    },
+export const createNewGame = async (difficulty: DifficultyLevel): Promise<NewGameResponse> => {
+    const response = await api.post(`/game/new/${difficulty}`);
+    return response.data;
+};
 
-    async restartGame(gameId: number): Promise<NewGameResponse> {
-        const response = await axios.post<NewGameResponse>(`${API_BASE_URL}/game/${gameId}/restart`);
-        return response.data;
-    },
+export const makeMove = async (gameId: number, move: GameMove): Promise<GameState> => {
+    const response = await api.post(`/game/${gameId}/move`, move);
+    return response.data;
+};
 
-    async getGameState(gameId: number): Promise<GameState> {
-        const response = await axios.get<GameState>(`${API_BASE_URL}/game/${gameId}`);
-        return response.data;
-    }
+export const restartGame = async (gameId: number): Promise<NewGameResponse> => {
+    const response = await api.post(`/game/${gameId}/restart`);
+    return response.data;
+};
+
+export const getGameState = async (gameId: number): Promise<GameState> => {
+    const response = await api.get(`/game/${gameId}`);
+    return response.data;
+};
+
+// 新增的API方法
+export const completeGame = async (gameId: number, result: GameResult): Promise<void> => {
+    await api.post(`/game/${gameId}/complete`, result);
+};
+
+export const getLeaderboard = async (difficulty: DifficultyLevel): Promise<LeaderboardEntry[]> => {
+    const response = await api.get(`/leaderboard/${difficulty}`);
+    return response.data;
+};
+
+export const getUserStats = async (userName: string): Promise<UserStats> => {
+    const response = await api.get(`/stats/${userName}`);
+    return response.data;
 }; 

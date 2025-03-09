@@ -22,18 +22,46 @@ export interface CellState {
 
 export interface GameState {
     board: CellState[][];
-    game_over: boolean;
-    won: boolean;
     mines_remaining: number;
+    is_game_over: boolean;
+    is_won: boolean;
 }
 
 export interface GameMove {
-    row: number;
-    col: number;
+    x: number;
+    y: number;
     action: 'reveal' | 'flag';
 }
 
 export interface NewGameResponse {
     game_id: number;
     state: GameState;
+}
+
+export interface LeaderboardEntry {
+    rank: number;
+    user_name: string;
+    best_time: number;
+    played_at: string;
+}
+
+export interface DifficultyStats {
+    games: number;
+    wins: number;
+    best_time: number | null;
+}
+
+export interface UserStats {
+    user_name: string;
+    stats: {
+        beginner: DifficultyStats;
+        intermediate: DifficultyStats;
+        expert: DifficultyStats;
+    };
+}
+
+export interface GameResult {
+    user_name: string;
+    duration: number;
+    moves: number;
 } 
