@@ -67,10 +67,12 @@ const UserName = styled.div`
 
 interface GameProps {
     initialDifficulty?: DifficultyLevel;
+    onGameComplete?: () => void;
 }
 
 export const Game: React.FC<GameProps> = ({
-    initialDifficulty = 'beginner'
+    initialDifficulty = 'beginner',
+    onGameComplete
 }) => {
     const [gameId, setGameId] = useState<number | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
@@ -131,6 +133,14 @@ export const Game: React.FC<GameProps> = ({
             }
             if (response.is_game_over) {
                 setIsTimerRunning(false);
+                if (response.is_won) {
+                    await completeGame(gameId, {
+                        user_name: userName,
+                        duration: time,
+                        moves: moves + 1
+                    });
+                    onGameComplete?.();
+                }
             }
         } catch (error) {
             console.error('Failed to make move:', error);

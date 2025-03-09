@@ -176,12 +176,17 @@ class GameDB:
         """, [user_name]).fetchone()
         
         if current_stats is None:
+            # 为新用户生成UUID
+            new_user_id = duckdb.default_connection.execute(
+                "SELECT uuid() as uuid"
+            ).fetchone()[0]
+            
             conn.execute(f"""
                 INSERT INTO user_stats (
                     user_id, user_name, {games_field}, {wins_field}, 
                     {best_time_field}, last_played_at
                 ) VALUES (?, ?, 1, ?, ?, CURRENT_TIMESTAMP)
-            """, (user_id, user_name, 1 if result else 0, 
+            """, (new_user_id, user_name, 1 if result else 0, 
                  duration if result else None))
         else:
             conn.execute(f"""

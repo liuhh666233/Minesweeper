@@ -63,9 +63,14 @@ const GameContainer = styled.div`
 
 const App: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState(lightTheme);
+  const [leaderboardKey, setLeaderboardKey] = useState(0);
 
   const toggleTheme = () => {
     setCurrentTheme(current => current.name === 'light' ? darkTheme : lightTheme);
+  };
+
+  const handleGameComplete = () => {
+    setLeaderboardKey(prev => prev + 1);
   };
 
   return (
@@ -76,9 +81,9 @@ const App: React.FC = () => {
         <Title>扫雷游戏</Title>
         <GameLayout>
           <GameContainer>
-            <Game />
+            <Game onGameComplete={handleGameComplete} />
           </GameContainer>
-          <Leaderboard />
+          <Leaderboard key={leaderboardKey} />
         </GameLayout>
       </AppContainer>
     </ThemeProvider>
