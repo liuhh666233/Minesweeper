@@ -1,6 +1,6 @@
 # Minesweeper Game
 
-一个基于 React + FastAPI 的扫雷游戏实现。
+一个基于 React + FastAPI 的扫雷游戏实现, 本项目完全通过cursor生成, 并由cursor进行优化.
 
 ## 功能特点
 
